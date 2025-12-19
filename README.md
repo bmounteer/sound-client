@@ -21,7 +21,7 @@ Start the web interface to browse and play sounds:
 ```bash
 npm run controller
 ```
-Then open http://localhost:3000 in your browser.
+Then open http://localhost:3005 in your browser.
 
 ### Listener Mode
 Start a listener on the device where you want sounds to play:
@@ -32,7 +32,7 @@ npm run listener
 ### Custom Server
 If running the listener on a different machine:
 ```bash
-node dist/listener.js --server ws://controller-ip:8080
+node dist/listener.js --server ws://controller-ip:8400
 ```
 
 ## Features

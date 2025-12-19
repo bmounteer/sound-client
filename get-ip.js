@@ -14,4 +14,4 @@ function getLocalIP() {
 
 console.log('Controller IP:', getLocalIP());
 console.log('Use this command on other computers:');
-console.log(`node dist/listener.js --server ws://${getLocalIP()}:8080`);
+console.log(`node dist/listener.js --server ws://${getLocalIP()}:8400`);

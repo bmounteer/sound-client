@@ -39,8 +39,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = __importDefault(require("ws"));
 const child_process_1 = require("child_process");
 const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+const os = __importStar(require("os"));
 class SoundListener {
-    constructor(serverUrl = 'ws://localhost:8080') {
+    constructor(serverUrl = 'ws://localhost:8400') {
         this.ws = null;
         this.serverUrl = serverUrl;
         this.connect();
@@ -70,36 +72,50 @@ class SoundListener {
     }
     handleMessage(message) {
         if (message.type === 'play' && message.sound) {
-            this.playSound(message.sound.path);
+            if (message.sound.audioData) {
+                this.playSoundFromData(message.sound.name, message.sound.audioData);
+            }
+            else {
+                this.playSound(message.sound.path);
+            }
         }
     }
-    playSound(soundPath) {
-        console.log(`Playing sound: ${path.basename(soundPath)}`);
-        // Use different commands based on the operating system
+    playSoundFromData(soundName, base64Data) {
+        console.log(`Playing sound: ${soundName}`);
+        const tempDir = os.tmpdir();
+        const tempFile = path.join(tempDir, `sound_${Date.now()}.mp3`);
+        try {
+            const audioBuffer = Buffer.from(base64Data, 'base64');
+            fs.writeFileSync(tempFile, audioBuffer);
+            this.playSound(tempFile, () => {
+                fs.unlinkSync(tempFile);
+            });
+        }
+        catch (error) {
+            console.error(`Error creating temp file: ${error}`);
+        }
+    }
+    playSound(soundPath, callback) {
         const platform = process.platform;
         let command;
         if (platform === 'darwin') {
-            // macOS
             command = `afplay "${soundPath}"`;
         }
         else if (platform === 'win32') {
-            // Windows
             command = `powershell -c "(New-Object Media.SoundPlayer '${soundPath}').PlaySync()"`;
         }
         else {
-            // Linux
             command = `aplay "${soundPath}" || paplay "${soundPath}" || mpg123 "${soundPath}"`;
         }
         (0, child_process_1.exec)(command, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error playing sound: ${error.message}`);
-                return;
             }
-            if (stderr) {
-                console.error(`Sound player stderr: ${stderr}`);
-                return;
+            else {
+                console.log('Sound played successfully');
             }
-            console.log('Sound played successfully');
+            if (callback)
+                callback();
         });
     }
 }

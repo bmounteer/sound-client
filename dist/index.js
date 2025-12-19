@@ -15,7 +15,7 @@ commander_1.program
 commander_1.program
     .command('listener')
     .description('Start the listener to play sounds')
-    .option('-s, --server <url>', 'WebSocket server URL', 'ws://localhost:8080')
+    .option('-s, --server <url>', 'WebSocket server URL', 'ws://localhost:8400')
     .action((options) => {
     process.env.SERVER_URL = options.server;
     require('./listener');

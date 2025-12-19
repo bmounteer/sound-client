@@ -1,14 +1,48 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ws_1 = __importDefault(require("ws"));
+const fs = __importStar(require("fs"));
 const soundLibrary_1 = require("./soundLibrary");
 const app = (0, express_1.default)();
-const port = 3000;
-const wsPort = 8080;
+const port = 3005;
+const wsPort = 8400;
 const soundLibrary = new soundLibrary_1.SoundLibrary();
 const wss = new ws_1.default.Server({ port: wsPort, host: '0.0.0.0' });
 app.use(express_1.default.static('public'));
@@ -28,13 +62,27 @@ app.post('/api/play', (req, res) => {
     if (!sound) {
         return res.status(404).json({ error: 'Sound not found' });
     }
-    // Broadcast to all connected listeners
-    wss.clients.forEach(client => {
-        if (client.readyState === ws_1.default.OPEN) {
-            client.send(JSON.stringify({ type: 'play', sound }));
-        }
-    });
-    res.json({ success: true, sound });
+    try {
+        const audioData = fs.readFileSync(sound.path);
+        const base64Audio = audioData.toString('base64');
+        // Broadcast to all connected listeners
+        wss.clients.forEach(client => {
+            if (client.readyState === ws_1.default.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'play',
+                    sound: {
+                        name: sound.name,
+                        category: sound.category,
+                        audioData: base64Audio
+                    }
+                }));
+            }
+        });
+        res.json({ success: true, sound: { name: sound.name, category: sound.category } });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to read audio file' });
+    }
 });
 // Serve the web interface
 app.get('/', (req, res) => {

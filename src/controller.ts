@@ -1,10 +1,11 @@
 import express from 'express';
 import WebSocket from 'ws';
-import { SoundLibrary } from './soundLibrary';
+import * as fs from 'fs';
+import {SoundLibrary} from './soundLibrary';
 
 const app = express();
-const port = 3000;
-const wsPort = 8080;
+const port = 3005;
+const wsPort = 8400;
 
 const soundLibrary = new SoundLibrary();
 const wss = new WebSocket.Server({ port: wsPort, host: '0.0.0.0' });
@@ -31,14 +32,28 @@ app.post('/api/play', (req, res) => {
     return res.status(404).json({ error: 'Sound not found' });
   }
 
-  // Broadcast to all connected listeners
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'play', sound }));
-    }
-  });
+  try {
+    const audioData = fs.readFileSync(sound.path);
+    const base64Audio = audioData.toString('base64');
+    
+    // Broadcast to all connected listeners
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ 
+          type: 'play', 
+          sound: {
+            name: sound.name,
+            category: sound.category,
+            audioData: base64Audio
+          }
+        }));
+      }
+    });
 
-  res.json({ success: true, sound });
+    res.json({ success: true, sound: { name: sound.name, category: sound.category } });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read audio file' });
+  }
 });
 
 // Serve the web interface

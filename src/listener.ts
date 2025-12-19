@@ -1,12 +1,14 @@
 import WebSocket from 'ws';
-import { exec } from 'child_process';
+import {exec} from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 
 class SoundListener {
   private ws: WebSocket | null = null;
   private serverUrl: string;
 
-  constructor(serverUrl: string = 'ws://localhost:8080') {
+  constructor(serverUrl: string = 'ws://localhost:8400') {
     this.serverUrl = serverUrl;
     this.connect();
   }
@@ -40,38 +42,51 @@ class SoundListener {
 
   private handleMessage(message: any): void {
     if (message.type === 'play' && message.sound) {
-      this.playSound(message.sound.path);
+      if (message.sound.audioData) {
+        this.playSoundFromData(message.sound.name, message.sound.audioData);
+      } else {
+        this.playSound(message.sound.path);
+      }
     }
   }
 
-  private playSound(soundPath: string): void {
-    console.log(`Playing sound: ${path.basename(soundPath)}`);
+  private playSoundFromData(soundName: string, base64Data: string): void {
+    console.log(`Playing sound: ${soundName}`);
     
-    // Use different commands based on the operating system
+    const tempDir = os.tmpdir();
+    const tempFile = path.join(tempDir, `sound_${Date.now()}.mp3`);
+    
+    try {
+      const audioBuffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(tempFile, audioBuffer);
+      
+      this.playSound(tempFile, () => {
+        fs.unlinkSync(tempFile);
+      });
+    } catch (error) {
+      console.error(`Error creating temp file: ${error}`);
+    }
+  }
+
+  private playSound(soundPath: string, callback?: () => void): void {
     const platform = process.platform;
     let command: string;
 
     if (platform === 'darwin') {
-      // macOS
       command = `afplay "${soundPath}"`;
     } else if (platform === 'win32') {
-      // Windows
       command = `powershell -c "(New-Object Media.SoundPlayer '${soundPath}').PlaySync()"`;
     } else {
-      // Linux
       command = `aplay "${soundPath}" || paplay "${soundPath}" || mpg123 "${soundPath}"`;
     }
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error(`Error playing sound: ${error.message}`);
-        return;
+      } else {
+        console.log('Sound played successfully');
       }
-      if (stderr) {
-        console.error(`Sound player stderr: ${stderr}`);
-        return;
-      }
-      console.log('Sound played successfully');
+      if (callback) callback();
     });
   }
 }

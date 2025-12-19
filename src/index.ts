@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { program } from 'commander';
+import {program} from 'commander';
 
 program
   .name('sound-client')
@@ -17,7 +17,7 @@ program
 program
   .command('listener')
   .description('Start the listener to play sounds')
-  .option('-s, --server <url>', 'WebSocket server URL', 'ws://localhost:8080')
+  .option('-s, --server <url>', 'WebSocket server URL', 'ws://localhost:8400')
   .action((options) => {
     process.env.SERVER_URL = options.server;
     require('./listener');
