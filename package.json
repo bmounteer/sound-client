@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "controller": "node dist/controller.js",
-    "listener": "node dist/listener.js"
+    "listener": "node dist/listener.js",
+    "listener-remote": "node connect.js"
   },
   "dependencies": {
     "express": "^4.18.2",
