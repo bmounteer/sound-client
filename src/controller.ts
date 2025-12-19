@@ -7,7 +7,7 @@ const port = 3000;
 const wsPort = 8080;
 
 const soundLibrary = new SoundLibrary();
-const wss = new WebSocket.Server({ port: wsPort });
+const wss = new WebSocket.Server({ port: wsPort, host: '0.0.0.0' });
 
 app.use(express.static('public'));
 app.use(express.json());
@@ -166,7 +166,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => console.log('Listener disconnected'));
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Controller running at http://localhost:${port}`);
   console.log(`WebSocket server running on port ${wsPort}`);
 });

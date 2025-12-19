@@ -10,7 +10,7 @@ const app = (0, express_1.default)();
 const port = 3000;
 const wsPort = 8080;
 const soundLibrary = new soundLibrary_1.SoundLibrary();
-const wss = new ws_1.default.Server({ port: wsPort });
+const wss = new ws_1.default.Server({ port: wsPort, host: '0.0.0.0' });
 app.use(express_1.default.static('public'));
 app.use(express_1.default.json());
 // API endpoints
@@ -159,7 +159,7 @@ wss.on('connection', (ws) => {
     console.log('Listener connected');
     ws.on('close', () => console.log('Listener disconnected'));
 });
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Controller running at http://localhost:${port}`);
     console.log(`WebSocket server running on port ${wsPort}`);
 });
